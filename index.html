@@ -19,46 +19,33 @@
 
 body{
   margin:0;
-  background:#050505;
+  background:
+    radial-gradient(circle at top,#3a2305 0%,#050505 60%,#000 100%);
   color:var(--text);
   font-family:Arial,sans-serif;
-  transition:background 1s ease,color 1s ease;
   overflow-x:hidden;
 }
 
-body.day{
-  background:
-    radial-gradient(circle at top,#ffd36b 0%,#8a4b13 35%,#050505 80%);
-}
-
-body.night{
-  background:
-    radial-gradient(circle at top,#071326 0%,#020611 45%,#050505 85%);
-}
-
-.stars{
-  display:none;
-}
-
-body.night .stars{
-  display:block;
+.crownRain{
   position:fixed;
   inset:0;
   pointer-events:none;
+  overflow:hidden;
   z-index:0;
-  background:
-    radial-gradient(circle at 20% 30%,rgba(255,255,255,.8) 1px,transparent 2px),
-    radial-gradient(circle at 70% 20%,rgba(255,255,255,.7) 1px,transparent 2px),
-    radial-gradient(circle at 40% 80%,rgba(255,255,255,.6) 1px,transparent 2px),
-    radial-gradient(circle at 85% 65%,rgba(255,255,255,.8) 1px,transparent 2px),
-    radial-gradient(circle at 10% 75%,rgba(255,255,255,.5) 1px,transparent 2px),
-    radial-gradient(circle at 55% 45%,rgba(255,255,255,.7) 1px,transparent 2px);
-  animation:twinkle 3s infinite alternate;
 }
 
-@keyframes twinkle{
-  from{opacity:.25}
-  to{opacity:.85}
+.crown{
+  position:absolute;
+  top:-50px;
+  color:var(--gold);
+  text-shadow:0 0 10px var(--gold2);
+  animation:fallCrown linear infinite;
+  opacity:.75;
+}
+
+@keyframes fallCrown{
+  from{transform:translateY(-60px) rotate(0deg)}
+  to{transform:translateY(110vh) rotate(360deg)}
 }
 
 .wrap{
@@ -73,25 +60,13 @@ body.night .stars{
   box-shadow:0 0 18px var(--gold2);
 }
 
-body.day .wrap{
-  background:linear-gradient(180deg,rgba(45,24,4,.93),rgba(8,8,8,.96));
-}
-
-body.night .wrap{
-  background:linear-gradient(180deg,rgba(3,8,20,.96),rgba(8,8,8,.98));
-}
-
 h1,h2,h3{
   color:var(--gold);
   text-align:center;
   text-shadow:0 0 8px var(--gold2);
 }
 
-h1{
-  font-size:26px;
-  margin:10px 0 8px;
-}
-
+h1{font-size:26px;margin:10px 0 8px}
 h2{font-size:20px;margin:0 0 10px}
 h3{font-size:16px;margin:8px 0}
 
@@ -131,24 +106,8 @@ h3{font-size:16px;margin:8px 0}
   border:1px solid var(--gold);
   border-radius:12px;
   margin:12px 0;
+  background:linear-gradient(135deg,#2b1903,#050505);
   box-shadow:0 0 12px var(--gold2);
-  transition:all .8s ease;
-}
-
-body.day .skyBanner{
-  background:linear-gradient(135deg,#ffd36b,#8a4b13);
-  color:#050505;
-}
-
-body.day .skyBanner h2,
-body.day .skyBanner p{
-  color:#050505;
-  text-shadow:none;
-}
-
-body.night .skyBanner{
-  background:linear-gradient(135deg,#071326,#000);
-  color:var(--gold);
 }
 
 .skyBanner p{
@@ -240,34 +199,18 @@ button.secondary{
   border:1px solid var(--gold2);
 }
 
-.control-grid{
-  display:grid;
-  grid-template-columns:1fr 1fr 1fr;
-  gap:6px;
-}
-
-.control-grid button{
-  font-size:12px;
-  padding:9px 4px;
-}
-
-.activeTheme{
-  outline:2px solid #fff2a8;
-  box-shadow:0 0 14px var(--gold);
-}
-
 .music-row{
   display:flex;
   align-items:center;
   gap:8px;
 }
 
-.music-row button{
+.music-row button,
+.music-row input{
   flex:1;
 }
 
 .music-row input{
-  flex:1;
   accent-color:var(--gold2);
 }
 
@@ -310,7 +253,7 @@ ul{
 
 <body>
 
-<div class="stars"></div>
+<div class="crownRain" id="crownRain"></div>
 
 <div class="wrap">
 
@@ -321,18 +264,8 @@ ul{
 </div>
 
 <div class="skyBanner">
-  <h2 id="timeGreeting">Loading theme...</h2>
+  <h2 id="timeGreeting">Loading greeting...</h2>
   <p id="themeMessage">Preparing the board...</p>
-</div>
-
-<div class="card">
-<h2>🎨 Theme Control</h2>
-<p style="text-align:center;margin-top:0;">Choose your view. Auto follows the time of day, because apparently the sun demanded administrative privileges.</p>
-<div class="control-grid">
-  <button id="themeAuto" onclick="setTheme('auto')">🌎 Auto</button>
-  <button id="themeDay" onclick="setTheme('day')">☀️ Day</button>
-  <button id="themeNight" onclick="setTheme('night')">🌙 Night</button>
-</div>
 </div>
 
 <div class="card">
@@ -408,7 +341,6 @@ Designed by @DevilsGambit22<br>
 <canvas id="canvas"></canvas>
 
 <script>
-/* CHANGE THIS ONLY IF YOUR CHESS.COM CLUB URL SLUG IS DIFFERENT */
 const CLUB_SLUG = "acfa-san-antonio-tx";
 
 const API = "https://api.chess.com/pub";
@@ -417,73 +349,51 @@ const TITLED_LIMIT = 20;
 const TITLES = ["GM","WGM","IM","WIM","FM","WFM","NM","CM","WCM"];
 const DEFAULT_AVATAR = "https://www.chess.com/bundles/web/images/noavatar_l.84a92436.gif";
 
-/* Theme system */
+/* Greeting system */
 const greeting = document.getElementById("timeGreeting");
 const message = document.getElementById("themeMessage");
 
-function clearThemeButtons(){
-  ["themeAuto","themeDay","themeNight"].forEach(id=>{
-    const el=document.getElementById(id);
-    if(el) el.classList.remove("activeTheme");
-  });
-}
-
-function applyAutoTheme(){
+function updateGreeting(){
   const hour = new Date().getHours();
-  document.body.classList.remove("day","night");
 
-  if(hour >= 7 && hour < 19){
-    document.body.classList.add("day");
-
-    if(hour < 12){
-      greeting.textContent = "☀️ Good Morning, San Antonio";
-      message.textContent = "The boards are ready and the day begins with strategy.";
-    }else{
-      greeting.textContent = "🌇 Good Afternoon, San Antonio";
-      message.textContent = "Perfect time for a game, assuming nobody blunders their queen before move ten.";
-    }
+  if(hour >= 7 && hour < 12){
+    greeting.textContent = "☀️ Good Morning, San Antonio";
+    message.textContent = "The boards are ready and the day begins with strategy.";
+  }else if(hour >= 12 && hour < 19){
+    greeting.textContent = "🌇 Good Afternoon, San Antonio";
+    message.textContent = "Perfect time for a game, assuming nobody blunders their queen before move ten.";
+  }else if(hour >= 19 && hour <= 23){
+    greeting.textContent = "🌙 Good Evening, San Antonio";
+    message.textContent = "The city lights are on and the boards are still waiting.";
   }else{
-    document.body.classList.add("night");
-
-    if(hour >= 19){
-      greeting.textContent = "🌙 Good Evening, San Antonio";
-      message.textContent = "The city lights are on and the boards are still waiting.";
-    }else{
-      greeting.textContent = "♟️ Late Night Chess";
-      message.textContent = "Quiet night, sharp moves, dangerous blunders.";
-    }
+    greeting.textContent = "♟️ Late Night Chess";
+    message.textContent = "Quiet night, sharp moves, dangerous blunders.";
   }
 }
 
-function setTheme(mode){
-  localStorage.setItem("themeMode",mode);
-  clearThemeButtons();
+updateGreeting();
+setInterval(updateGreeting,60000);
 
-  if(mode === "day"){
-    document.body.classList.remove("night");
-    document.body.classList.add("day");
-    greeting.textContent = "☀️ Day Theme";
-    message.textContent = "Manual day mode enabled.";
-    document.getElementById("themeDay").classList.add("activeTheme");
-  }else if(mode === "night"){
-    document.body.classList.remove("day");
-    document.body.classList.add("night");
-    greeting.textContent = "🌙 Night Theme";
-    message.textContent = "Manual night mode enabled.";
-    document.getElementById("themeNight").classList.add("activeTheme");
-  }else{
-    applyAutoTheme();
-    document.getElementById("themeAuto").classList.add("activeTheme");
+/* Falling crowns */
+function createCrowns(){
+  const crownRain = document.getElementById("crownRain");
+  const crownCount = 22;
+
+  for(let i = 0; i < crownCount; i++){
+    const crown = document.createElement("div");
+    crown.className = "crown";
+    crown.textContent = "👑";
+
+    crown.style.left = Math.random() * 100 + "vw";
+    crown.style.fontSize = (Math.random() * 14 + 15) + "px";
+    crown.style.animationDuration = (Math.random() * 12 + 14) + "s";
+    crown.style.animationDelay = (Math.random() * 14) + "s";
+
+    crownRain.appendChild(crown);
   }
 }
 
-setTheme(localStorage.getItem("themeMode") || "auto");
-
-setInterval(()=>{
-  if((localStorage.getItem("themeMode") || "auto") === "auto"){
-    applyAutoTheme();
-  }
-},60000);
+createCrowns();
 
 /* Chess.com API */
 async function getJSON(url){
