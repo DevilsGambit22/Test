@@ -26,28 +26,6 @@ body{
   overflow-x:hidden;
 }
 
-.crownRain{
-  position:fixed;
-  inset:0;
-  pointer-events:none;
-  overflow:hidden;
-  z-index:0;
-}
-
-.crown{
-  position:absolute;
-  top:-50px;
-  color:var(--gold);
-  text-shadow:0 0 10px var(--gold2);
-  animation:fallCrown linear infinite;
-  opacity:.75;
-}
-
-@keyframes fallCrown{
-  from{transform:translateY(-60px) rotate(0deg)}
-  to{transform:translateY(110vh) rotate(360deg)}
-}
-
 .wrap{
   position:relative;
   z-index:1;
@@ -58,6 +36,37 @@ body{
   border-radius:16px;
   background:rgba(8,8,8,.95);
   box-shadow:0 0 18px var(--gold2);
+  overflow:hidden;
+}
+
+/* Crowns stay inside sidebar */
+.crownRain{
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  overflow:hidden;
+  z-index:0;
+  border-radius:16px;
+}
+
+.crown{
+  position:absolute;
+  top:-50px;
+  color:var(--gold);
+  text-shadow:0 0 10px var(--gold2);
+  animation:fallCrown linear infinite;
+  opacity:.65;
+}
+
+@keyframes fallCrown{
+  from{transform:translateY(-60px) rotate(0deg)}
+  to{transform:translateY(1200px) rotate(360deg)}
+}
+
+/* Keeps content above falling crowns */
+.wrap > *:not(.crownRain){
+  position:relative;
+  z-index:1;
 }
 
 h1,h2,h3{
@@ -247,15 +256,19 @@ ul{
     max-width:100%;
     border-radius:0;
   }
+
+  .crownRain{
+    border-radius:0;
+  }
 }
 </style>
 </head>
 
 <body>
 
-<div class="crownRain" id="crownRain"></div>
-
 <div class="wrap">
+
+<div class="crownRain" id="crownRain"></div>
 
 <h1>♟ ACFA San Antonio, TX</h1>
 
@@ -374,18 +387,18 @@ function updateGreeting(){
 updateGreeting();
 setInterval(updateGreeting,60000);
 
-/* Falling crowns */
+/* Falling crowns inside sidebar */
 function createCrowns(){
   const crownRain = document.getElementById("crownRain");
-  const crownCount = 22;
+  const crownCount = 24;
 
   for(let i = 0; i < crownCount; i++){
     const crown = document.createElement("div");
     crown.className = "crown";
     crown.textContent = "👑";
 
-    crown.style.left = Math.random() * 100 + "vw";
-    crown.style.fontSize = (Math.random() * 14 + 15) + "px";
+    crown.style.left = Math.random() * 100 + "%";
+    crown.style.fontSize = (Math.random() * 12 + 13) + "px";
     crown.style.animationDuration = (Math.random() * 12 + 14) + "s";
     crown.style.animationDelay = (Math.random() * 14) + "s";
 
