@@ -19,8 +19,7 @@
 
 body{
   margin:0;
-  background:
-    radial-gradient(circle at top,#3a2305 0%,#050505 60%,#000 100%);
+  background:radial-gradient(circle at top,#3a2305 0%,#050505 60%,#000 100%);
   color:var(--text);
   font-family:Arial,sans-serif;
   overflow-x:hidden;
@@ -28,7 +27,6 @@ body{
 
 .wrap{
   position:relative;
-  z-index:1;
   max-width:420px;
   margin:auto;
   padding:12px;
@@ -39,14 +37,12 @@ body{
   overflow:hidden;
 }
 
-/* Crowns stay inside sidebar */
 .crownRain{
   position:absolute;
   inset:0;
   pointer-events:none;
   overflow:hidden;
   z-index:0;
-  border-radius:16px;
 }
 
 .crown{
@@ -63,7 +59,6 @@ body{
   to{transform:translateY(1200px) rotate(360deg)}
 }
 
-/* Keeps content above falling crowns */
 .wrap > *:not(.crownRain){
   position:relative;
   z-index:1;
@@ -208,19 +203,56 @@ button.secondary{
   border:1px solid var(--gold2);
 }
 
+.now-playing{
+  text-align:center;
+  background:#050505;
+  border:1px solid var(--gold2);
+  border-radius:10px;
+  padding:10px;
+  margin:10px 0;
+}
+
+.now-playing h3{
+  margin:4px 0 0;
+}
+
+.music-controls{
+  display:grid;
+  grid-template-columns:1fr 1fr 1fr;
+  gap:6px;
+  margin:8px 0;
+}
+
+.music-controls button{
+  font-size:13px;
+  padding:9px 4px;
+}
+
 .music-row{
   display:flex;
   align-items:center;
   gap:8px;
 }
 
-.music-row button,
 .music-row input{
   flex:1;
+  accent-color:var(--gold2);
 }
 
-.music-row input{
+#progressBar{
+  width:100%;
   accent-color:var(--gold2);
+}
+
+.time-row{
+  display:flex;
+  justify-content:space-between;
+  margin-top:4px;
+}
+
+.activeMusicMode{
+  outline:2px solid #fff2a8;
+  box-shadow:0 0 12px var(--gold);
 }
 
 canvas{
@@ -254,10 +286,6 @@ ul{
 @media(max-width:480px){
   .wrap{
     max-width:100%;
-    border-radius:0;
-  }
-
-  .crownRain{
     border-radius:0;
   }
 }
@@ -323,18 +351,42 @@ ul{
 </div>
 
 <div class="card">
-<h2>🎵 Club Music</h2>
-<p style="text-align:center;margin-top:0;">Upload your MP3 to <b>music/acfa-theme.mp3</b>. The button will work automatically once the file exists.</p>
+<h2>🎵 ACFA Radio</h2>
+<p style="text-align:center;margin-top:0;">Choose your soundtrack. Tiny Spotify for chess cowboys, because apparently that is where civilization has landed.</p>
 
-<audio id="clubMusic" loop preload="none">
-  <source src="music/acfa-theme.mp3" type="audio/mpeg">
-</audio>
+<audio id="clubMusic" preload="none"></audio>
+
+<div class="now-playing">
+  <small>Now Playing</small>
+  <h3 id="trackTitle">Loading track...</h3>
+</div>
+
+<div class="music-controls">
+  <button onclick="prevTrack()">⏮</button>
+  <button id="musicBtn" onclick="toggleMusic()">▶</button>
+  <button onclick="nextTrack()">⏭</button>
+</div>
+
+<input id="progressBar" type="range" min="0" max="100" value="0" step="1" oninput="seekMusic(this.value)">
+
+<div class="time-row">
+  <small id="currentTime">0:00</small>
+  <small id="durationTime">0:00</small>
+</div>
+
+<div class="music-controls">
+  <button id="shuffleBtn" onclick="toggleShuffle()">🔀 Shuffle</button>
+  <button id="repeatBtn" onclick="toggleRepeat()">🔁 Repeat</button>
+  <button onclick="stopMusic()">⏹ Stop</button>
+</div>
 
 <div class="music-row">
-  <button id="musicBtn" onclick="toggleMusic()">▶ Play</button>
+  <span>🔈</span>
   <input id="volumeSlider" type="range" min="0" max="1" step="0.05" value="0.45" oninput="setVolume(this.value)">
+  <span>🔊</span>
 </div>
-<small id="musicStatus">Music off</small>
+
+<small id="musicStatus">Music ready</small>
 </div>
 
 <div class="card">
@@ -527,11 +579,156 @@ loadClubMembers().catch(err=>{
   document.getElementById("titledCount").textContent = "Error";
 });
 
-/* Music */
+/* ACFA Radio Playlist */
+const tracks = [
+  {
+    title: "High Noon Standoff",
+    src: "music/openmindaudio-high-noon-standoff-western-music-preview-545348.mp3"
+  },
+  {
+    title: "Spaghetti Western",
+    src: "music/positive_sound-spaghetti-western-491538.mp3"
+  },
+  {
+    title: "Western Soundtrack II",
+    src: "music/vjgalaxy-spaghetti-western-soundtrack-02-542320.mp3"
+  }
+];
+
 const music = document.getElementById("clubMusic");
 const musicBtn = document.getElementById("musicBtn");
 const musicStatus = document.getElementById("musicStatus");
 const volumeSlider = document.getElementById("volumeSlider");
+const trackTitle = document.getElementById("trackTitle");
+const progressBar = document.getElementById("progressBar");
+const currentTimeEl = document.getElementById("currentTime");
+const durationTimeEl = document.getElementById("durationTime");
+const shuffleBtn = document.getElementById("shuffleBtn");
+const repeatBtn = document.getElementById("repeatBtn");
+
+let currentTrack = Number(localStorage.getItem("acfaCurrentTrack")) || 0;
+let shuffleMode = localStorage.getItem("acfaShuffle") === "true";
+let repeatMode = localStorage.getItem("acfaRepeat") === "true";
+
+if(currentTrack < 0 || currentTrack >= tracks.length){
+  currentTrack = 0;
+}
+
+function loadTrack(index){
+  currentTrack = index;
+  music.src = tracks[currentTrack].src;
+  trackTitle.textContent = tracks[currentTrack].title;
+  musicStatus.textContent = "Selected: " + tracks[currentTrack].title;
+  localStorage.setItem("acfaCurrentTrack", currentTrack);
+}
+
+function toggleMusic(){
+  if(music.paused){
+    music.play().then(()=>{
+      musicBtn.textContent = "⏸";
+      musicStatus.textContent = "Playing: " + tracks[currentTrack].title;
+    }).catch(()=>{
+      musicStatus.textContent = "Track not found. Check your music folder and filename.";
+    });
+  }else{
+    music.pause();
+    musicBtn.textContent = "▶";
+    musicStatus.textContent = "Paused";
+  }
+}
+
+function nextTrack(){
+  if(shuffleMode){
+    let next = currentTrack;
+    while(next === currentTrack && tracks.length > 1){
+      next = Math.floor(Math.random() * tracks.length);
+    }
+    currentTrack = next;
+  }else{
+    currentTrack = (currentTrack + 1) % tracks.length;
+  }
+
+  const wasPlaying = !music.paused;
+  loadTrack(currentTrack);
+
+  if(wasPlaying){
+    music.play();
+    musicBtn.textContent = "⏸";
+  }
+}
+
+function prevTrack(){
+  currentTrack = (currentTrack - 1 + tracks.length) % tracks.length;
+
+  const wasPlaying = !music.paused;
+  loadTrack(currentTrack);
+
+  if(wasPlaying){
+    music.play();
+    musicBtn.textContent = "⏸";
+  }
+}
+
+function toggleShuffle(){
+  shuffleMode = !shuffleMode;
+  localStorage.setItem("acfaShuffle", shuffleMode);
+  shuffleBtn.classList.toggle("activeMusicMode", shuffleMode);
+}
+
+function toggleRepeat(){
+  repeatMode = !repeatMode;
+  localStorage.setItem("acfaRepeat", repeatMode);
+  repeatBtn.classList.toggle("activeMusicMode", repeatMode);
+}
+
+function stopMusic(){
+  music.pause();
+  music.currentTime = 0;
+  musicBtn.textContent = "▶";
+  musicStatus.textContent = "Stopped";
+  progressBar.value = 0;
+  currentTimeEl.textContent = "0:00";
+}
+
+function setVolume(value){
+  music.volume = Number(value);
+  localStorage.setItem("acfaMusicVolume", value);
+}
+
+function formatTime(seconds){
+  if(isNaN(seconds)) return "0:00";
+  const min = Math.floor(seconds / 60);
+  const sec = Math.floor(seconds % 60).toString().padStart(2,"0");
+  return min + ":" + sec;
+}
+
+function seekMusic(value){
+  if(music.duration){
+    music.currentTime = (value / 100) * music.duration;
+  }
+}
+
+music.addEventListener("timeupdate",()=>{
+  if(music.duration){
+    progressBar.value = (music.currentTime / music.duration) * 100;
+    currentTimeEl.textContent = formatTime(music.currentTime);
+    durationTimeEl.textContent = formatTime(music.duration);
+  }
+});
+
+music.addEventListener("loadedmetadata",()=>{
+  durationTimeEl.textContent = formatTime(music.duration);
+});
+
+music.addEventListener("ended",()=>{
+  if(repeatMode){
+    music.currentTime = 0;
+    music.play();
+  }else{
+    nextTrack();
+    music.play();
+  }
+});
 
 const savedVolume = localStorage.getItem("acfaMusicVolume");
 if(savedVolume !== null){
@@ -541,27 +738,10 @@ if(savedVolume !== null){
   music.volume = 0.45;
 }
 
-function setVolume(value){
-  music.volume = Number(value);
-  localStorage.setItem("acfaMusicVolume", value);
-}
+shuffleBtn.classList.toggle("activeMusicMode", shuffleMode);
+repeatBtn.classList.toggle("activeMusicMode", repeatMode);
 
-function toggleMusic(){
-  if(music.paused){
-    music.play().then(()=>{
-      musicBtn.textContent = "⏸ Pause";
-      musicStatus.textContent = "Music playing";
-      localStorage.setItem("acfaMusicPlaying","yes");
-    }).catch(()=>{
-      musicStatus.textContent = "Music file not found yet. Upload music/acfa-theme.mp3.";
-    });
-  }else{
-    music.pause();
-    musicBtn.textContent = "▶ Play";
-    musicStatus.textContent = "Music off";
-    localStorage.setItem("acfaMusicPlaying","no");
-  }
-}
+loadTrack(currentTrack);
 
 /* Celebration effects */
 const canvas=document.getElementById("canvas");
